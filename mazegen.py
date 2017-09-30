@@ -56,20 +56,28 @@ class MazeGen:
         return exits
 
     def generate(self):
+        # Build maze whilst there are still unvisited cells
         while self.visited and self.visited_count > 0:
+            # Get available exits from the currently visited cell
             curr_coords = self.visited[-1]
             exits = self.get_free_exits(curr_coords)
             if exits:
+                # If there are still untried exits then randomly choose one and
+                # add it to top of currently visited cells
                 choice = random.choice(exits)
                 self.add_dir(curr_coords, choice[0])
 
                 choice_coords = (curr_coords[0] + choice[2], curr_coords[1] + choice[3])
                 self.visited.append(choice_coords)
                 self.add_dir(self.visited[-1], choice[1])
+
                 if self.get(choice_coords) & MazeGen.VISITED is 0:
+                    # If this new cell has not been visited before then
+                    # mark it as such
                     self.add_dir(choice_coords, MazeGen.VISITED)
                     self.visited_count -= 1
             else:
+                # No available exits, so don't visit this cell in future
                 self.visited.pop()
 
     def render(self, cell_width, cell_height):
