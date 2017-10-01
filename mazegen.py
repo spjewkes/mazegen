@@ -109,6 +109,7 @@ class MazeGen:
                 self.visited.pop()
 
     def render_rect(self, image, x, y, width, height, colour):
+        # Helper function to draw a rectangle of a specified size to an image
         for off_y in range(height):
             for off_x in range(width):
                 image.putpixel((x + off_x, y + off_y), colour)
@@ -126,6 +127,7 @@ class MazeGen:
                 x = cx * total_width + wall_width
                 y = cy * total_height + wall_height
 
+                # Fill the bits of the top left wall if necessary
                 if cy is 0 and cx is 0:
                     self.render_rect(image, 0, 0, wall_width, wall_height, wall_col)
                 if cy is 0:
@@ -133,19 +135,24 @@ class MazeGen:
                 if cx is 0:
                     self.render_rect(image, 0, y, wall_width, total_height, wall_col)
 
+                # Draw cell
                 self.render_rect(image, x, y, cell_width, cell_height, cell_col)
                     
                 state = self.get(Coord(cx, cy))
+
+                # Draw eastern wall
                 if state & MazeGen.EAST is 0:
                     self.render_rect(image, x + cell_width, y, wall_width, cell_height, wall_col)
                 else:
                     self.render_rect(image, x + cell_width, y, wall_width, cell_height, cell_col)
 
+                # Draw southern wall
                 if state & MazeGen.SOUTH is 0:
                     self.render_rect(image, x, y + cell_height, cell_width, wall_height, wall_col)
                 else:
                     self.render_rect(image, x, y + cell_height, cell_width, wall_height, cell_col)
                 
+                # Fill bottom right of cell with wall at all time
                 self.render_rect(image, x + cell_width, y + cell_height, wall_width, wall_height, wall_col)
         image.save("maze.png", "PNG")
 
