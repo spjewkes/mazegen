@@ -108,16 +108,45 @@ class MazeGen:
                 # No available exits, so don't visit this cell in future
                 self.visited.pop()
 
-    def render(self, cell_width, cell_height):
-        image = Image.new('RGB', (self.width * 2, self.height *2), (0,0,0))
-        for y in range(self.height):
-            for x in range(self.width):
-                state = self.get(Coord(x, y))
+    def render_rect(self, image, x, y, width, height, colour):
+        for off_y in range(height):
+            for off_x in range(width):
+                image.putpixel((x + off_x, y + off_y), colour)
+
+    def render(self, cell_width, cell_height, wall_width, wall_height):
+        wall_col = (255, 255, 255)
+        cell_col = (0, 0, 0)
+        total_width = cell_width + wall_width
+        total_height = cell_height + wall_height
+
+        image = Image.new('RGB', (self.width * total_width + wall_width,
+                                  self.height * total_height + wall_height), cell_col)
+        for cy in range(self.height):
+            for cx in range(self.width):
+                x = cx * total_width + wall_width
+                y = cy * total_height + wall_height
+
+                if cy is 0 and cx is 0:
+                    self.render_rect(image, 0, 0, wall_width, wall_height, wall_col)
+                if cy is 0:
+                    self.render_rect(image, x, 0, total_width, wall_height, wall_col)
+                if cx is 0:
+                    self.render_rect(image, 0, y, wall_width, total_height, wall_col)
+
+                self.render_rect(image, x, y, cell_width, cell_height, cell_col)
+                    
+                state = self.get(Coord(cx, cy))
                 if state & MazeGen.EAST is 0:
-                    image.putpixel(((x*2) + 1, y*2), (255, 255, 255))
+                    self.render_rect(image, x + cell_width, y, wall_width, cell_height, wall_col)
+                else:
+                    self.render_rect(image, x + cell_width, y, wall_width, cell_height, cell_col)
+
                 if state & MazeGen.SOUTH is 0:
-                    image.putpixel((x*2, (y*2) + 1), (255, 255, 255))
-                image.putpixel(((x*2)+1, (y*2)+1), (255, 255, 255))
+                    self.render_rect(image, x, y + cell_height, cell_width, wall_height, wall_col)
+                else:
+                    self.render_rect(image, x, y + cell_height, cell_width, wall_height, cell_col)
+                
+                self.render_rect(image, x + cell_width, y + cell_height, wall_width, wall_height, wall_col)
         image.save("maze.png", "PNG")
 
 def main():
@@ -125,22 +154,29 @@ def main():
 
     parser.add_argument('--width', help="Width of maze", dest='width', type=int, default=100)
     parser.add_argument('--height', help="Height of maze", dest='height', type=int, default=75)
-    parser.add_argument('--cellw', help="Width of each maze cell", dest='cellw', type=int, default=8)
-    parser.add_argument('--cellh', help="Height of each maze cell", dest='cellh', type=int, default=8)
+    parser.add_argument('--cellw', help="Width of each maze cell", dest='cellw', type=int, default=1)
+    parser.add_argument('--cellh', help="Height of each maze cell", dest='cellh', type=int, default=1)
+    parser.add_argument('--wallw', help="Width of each maze cell wall", dest='wallw', type=int, default=1)
+    parser.add_argument('--wallh', help="Height of each maze cell wall", dest='wallh', type=int, default=1)
     parser.add_argument('--verbose', help="Enable verbose output whilst generating the maze", action='store_true')
     args = parser.parse_args()
 
     try:
-        if args.cellw < 2:
-            raise Exception("Cell width must be greater than 1")
-        if args.cellh < 2:
-            raise Exception("Cell height must be greater than 1")
+        if args.cellw < 1:
+            raise Exception("Cell width must be greater than 0")
+        if args.cellh < 1:
+            raise Exception("Cell height must be greater than 0")
+
+        if args.wallw < 1:
+            raise Exception("Cell wall width must be greater than 0")
+        if args.wallh < 1:
+            raise Exception("Cell wall height must be greater than 0")
 
         maze = MazeGen(args.width, args.height)
         maze.generate()
         if args.verbose:
             print(maze)
-        maze.render(args.cellw, args.cellh)
+        maze.render(args.cellw, args.cellh, args.wallw, args.wallh)
 
     except Exception as e:
         if args.verbose:
