@@ -1,11 +1,19 @@
 #!/usr/bin/env python
-import sys
+"""
+This module is a simple program that generates a maze of a speified size and
+writes it out to a PNG file.
+"""
 import argparse
 import random
 import traceback
 from PIL import Image
 
-class Coord:
+class Coord(object):
+    """
+    Class defining a 2D coordinate.
+    """
+    __slots__ = ["coord"]
+
     def __init__(self, x=0, y=0):
         self.coord = (x, y)
 
@@ -13,7 +21,7 @@ class Coord:
         return "(x={}, y={})".format(self.coord[0], self.coord[1])
 
     def __add__(self, other):
-        if isinstance(other, tuple) and len(other) is 2:
+        if isinstance(other, tuple) and len(other) == 2:
             return Coord(self.coord[0] + other[0], self.coord[1] + other[1])
         elif isinstance(other, Coord):
             return self.__add__(other.coord)
@@ -23,21 +31,36 @@ class Coord:
     def __radd__(self, other):
         return self.__add__(other)
 
-    def x(self):
+    def getx(self):
+        """
+        Return x coordinate.
+        """
         return self.coord[0]
 
-    def y(self):
+    def gety(self):
+        """
+        Return y coordinate.
+        """
         return self.coord[1]
 
     def conv_1d(self, width):
-        return self.y() * width + self.x()
+        """
+        Convert the 2d coordinate into a 1d value when given
+        a magnitude for x (as width).
+        """
+        return self.gety() * width + self.getx()
 
-class MazeGen:
+class MazeGen(object):
+    """
+    Class that generates the maze of a given size.
+    """
     NORTH = 0x1
     SOUTH = 0x2
     EAST = 0x4
     WEST = 0x8
     VISITED = 0x10
+
+    __slots__ = ["width", "height", "maze", "visited", "visited_count"]
 
     def __init__(self, width, height):
         self.width = width
@@ -45,45 +68,58 @@ class MazeGen:
         self.maze = [0] * (width * height)
 
         self.visited = []
-        self.visited.append(Coord(0,0))
+        self.visited.append(Coord(0, 0))
         self.visited_count = width * height
         self.update_state(self.visited[-1], MazeGen.VISITED)
 
     def __str__(self):
-        str = "Width: {}\nHeight: {}\n".format(self.width, self.height)
+        ret_str = "Width: {}\nHeight: {}\n".format(self.width, self.height)
         for y in range(self.height):
             for x in range(self.width):
-                str += "{:02x} ".format(self.get(Coord(x,y)))
-            str += "\n"
-        return str
+                ret_str += "{:02x} ".format(self.get(Coord(x, y)))
+            ret_str += "\n"
+        return ret_str
 
     def get(self, coord):
+        """
+        Get the value of the maze at a specified 2d coordinate.
+        """
         return self.maze[coord.conv_1d(self.width)]
 
     def update_state(self, coord, state):
+        """
+        Update the maze location specified by a 2d coordinate with a
+        given state.
+        """
         self.maze[coord.conv_1d(self.width)] |= state
 
     def get_free_exits(self, coord):
+        """
+        Returns the free exists for a given 2d coordinate.
+        """
         tmp_exits = []
         state = self.get(coord)
 
-        if state & MazeGen.NORTH is 0 and coord.y() > 0:
+        if state & MazeGen.NORTH is 0 and coord.gety() > 0:
             tmp_exits.append((MazeGen.NORTH, MazeGen.SOUTH, Coord(0, -1)))
-        if state & MazeGen.SOUTH is 0 and coord.y() < (self.height - 1):
+        if state & MazeGen.SOUTH is 0 and coord.gety() < (self.height - 1):
             tmp_exits.append((MazeGen.SOUTH, MazeGen.NORTH, Coord(0, 1)))
-        if state & MazeGen.WEST is 0 and coord.x() > 0:
+        if state & MazeGen.WEST is 0 and coord.getx() > 0:
             tmp_exits.append((MazeGen.WEST, MazeGen.EAST, Coord(-1, 0)))
-        if state & MazeGen.EAST is 0 and coord.x() < (self.width - 1):
+        if state & MazeGen.EAST is 0 and coord.getx() < (self.width - 1):
             tmp_exits.append((MazeGen.EAST, MazeGen.WEST, Coord(1, 0)))
 
-        exits = []
-        for exit in tmp_exits:
-            if self.get(coord + exit[2]) & MazeGen.VISITED is 0:
-                exits.append(exit)
+        ret_exits = []
+        for tmp_exit in tmp_exits:
+            if self.get(coord + tmp_exit[2]) & MazeGen.VISITED is 0:
+                ret_exits.append(tmp_exit)
 
-        return exits
+        return ret_exits
 
     def generate(self):
+        """
+        This function call will generate the maze itself.
+        """
         # Build maze whilst there are still unvisited cells
         while self.visited and self.visited_count > 0:
             # Get available exits from the currently visited cell
@@ -109,12 +145,17 @@ class MazeGen:
                 self.visited.pop()
 
     def render_rect(self, image, x, y, width, height, colour):
-        # Helper function to draw a rectangle of a specified size to an image
+        """
+        Helper function to draw a rectangle of a specified size to an image.
+        """
         for off_y in range(height):
             for off_x in range(width):
                 image.putpixel((x + off_x, y + off_y), colour)
 
     def render(self, cell_width, cell_height, wall_width, wall_height):
+        """
+        Render the maze into a PNG file.
+        """
         wall_col = (255, 255, 255)
         cell_col = (0, 0, 0)
         total_width = cell_width + wall_width
@@ -137,7 +178,7 @@ class MazeGen:
 
                 # Draw cell
                 self.render_rect(image, x, y, cell_width, cell_height, cell_col)
-                    
+
                 state = self.get(Coord(cx, cy))
 
                 # Draw eastern wall
@@ -151,21 +192,32 @@ class MazeGen:
                     self.render_rect(image, x, y + cell_height, cell_width, wall_height, wall_col)
                 else:
                     self.render_rect(image, x, y + cell_height, cell_width, wall_height, cell_col)
-                
+
                 # Fill bottom right of cell with wall at all time
-                self.render_rect(image, x + cell_width, y + cell_height, wall_width, wall_height, wall_col)
+                self.render_rect(image, x + cell_width, y + cell_height,
+                                 wall_width, wall_height, wall_col)
         image.save("maze.png", "PNG")
 
 def main():
+    """
+    Main entry-point of the module that generates the maze and writes it out to a PNG file.
+    """
     parser = argparse.ArgumentParser(description="Generates random mazes as PNG images.")
 
-    parser.add_argument('--width', help="Width of maze", dest='width', type=int, default=100)
-    parser.add_argument('--height', help="Height of maze", dest='height', type=int, default=75)
-    parser.add_argument('--cellw', help="Width of each maze cell", dest='cellw', type=int, default=1)
-    parser.add_argument('--cellh', help="Height of each maze cell", dest='cellh', type=int, default=1)
-    parser.add_argument('--wallw', help="Width of each maze cell wall", dest='wallw', type=int, default=1)
-    parser.add_argument('--wallh', help="Height of each maze cell wall", dest='wallh', type=int, default=1)
-    parser.add_argument('--verbose', help="Enable verbose output whilst generating the maze", action='store_true')
+    parser.add_argument('--width', help="Width of maze", dest='width',
+                        type=int, default=100)
+    parser.add_argument('--height', help="Height of maze", dest='height',
+                        type=int, default=75)
+    parser.add_argument('--cellw', help="Width of each maze cell", dest='cellw',
+                        type=int, default=1)
+    parser.add_argument('--cellh', help="Height of each maze cell", dest='cellh',
+                        type=int, default=1)
+    parser.add_argument('--wallw', help="Width of each maze cell wall", dest='wallw',
+                        type=int, default=1)
+    parser.add_argument('--wallh', help="Height of each maze cell wall", dest='wallh',
+                        type=int, default=1)
+    parser.add_argument('--verbose', help="Enable verbose output whilst generating the maze",
+                        action='store_true')
     args = parser.parse_args()
 
     try:
@@ -182,13 +234,13 @@ def main():
         maze = MazeGen(args.width, args.height)
         maze.generate()
         if args.verbose:
-            print(maze)
+            print maze
         maze.render(args.cellw, args.cellh, args.wallw, args.wallh)
 
     except Exception as e:
         if args.verbose:
             traceback.print_exc()
-        print("Failed with error:\n{}".format(e))
+        print "Failed with error:\n{}".format(e)
 
 if __name__ == "__main__":
     main()
