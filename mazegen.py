@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 This module is a simple program that generates a maze of a speified size and
 writes it out to a PNG file.
@@ -100,18 +100,18 @@ class MazeGen(object):
         tmp_exits = []
         state = self.get(coord)
 
-        if state & MazeGen.NORTH is 0 and coord.gety() > 0:
+        if state & MazeGen.NORTH == 0 and coord.gety() > 0:
             tmp_exits.append((MazeGen.NORTH, MazeGen.SOUTH, Coord(0, -1)))
-        if state & MazeGen.SOUTH is 0 and coord.gety() < (self.height - 1):
+        if state & MazeGen.SOUTH == 0 and coord.gety() < (self.height - 1):
             tmp_exits.append((MazeGen.SOUTH, MazeGen.NORTH, Coord(0, 1)))
-        if state & MazeGen.WEST is 0 and coord.getx() > 0:
+        if state & MazeGen.WEST == 0 and coord.getx() > 0:
             tmp_exits.append((MazeGen.WEST, MazeGen.EAST, Coord(-1, 0)))
-        if state & MazeGen.EAST is 0 and coord.getx() < (self.width - 1):
+        if state & MazeGen.EAST == 0 and coord.getx() < (self.width - 1):
             tmp_exits.append((MazeGen.EAST, MazeGen.WEST, Coord(1, 0)))
 
         ret_exits = []
         for tmp_exit in tmp_exits:
-            if self.get(coord + tmp_exit[2]) & MazeGen.VISITED is 0:
+            if self.get(coord + tmp_exit[2]) & MazeGen.VISITED == 0:
                 ret_exits.append(tmp_exit)
 
         return ret_exits
@@ -135,7 +135,7 @@ class MazeGen(object):
                 self.visited.append(choice_coord)
                 self.update_state(self.visited[-1], choice[1])
 
-                if self.get(choice_coord) & MazeGen.VISITED is 0:
+                if self.get(choice_coord) & MazeGen.VISITED == 0:
                     # If this new cell has not been visited before then
                     # mark it as such
                     self.update_state(choice_coord, MazeGen.VISITED)
@@ -169,11 +169,11 @@ class MazeGen(object):
                 y = cy * total_height + wall_height
 
                 # Fill the bits of the top left wall if necessary
-                if cy is 0 and cx is 0:
+                if cy == 0 and cx == 0:
                     self.render_rect(image, 0, 0, wall_width, wall_height, wall_col)
-                if cy is 0:
+                if cy == 0:
                     self.render_rect(image, x, 0, total_width, wall_height, wall_col)
-                if cx is 0:
+                if cx == 0:
                     self.render_rect(image, 0, y, wall_width, total_height, wall_col)
 
                 # Draw cell
@@ -182,13 +182,13 @@ class MazeGen(object):
                 state = self.get(Coord(cx, cy))
 
                 # Draw eastern wall
-                if state & MazeGen.EAST is 0:
+                if state & MazeGen.EAST == 0:
                     self.render_rect(image, x + cell_width, y, wall_width, cell_height, wall_col)
                 else:
                     self.render_rect(image, x + cell_width, y, wall_width, cell_height, cell_col)
 
                 # Draw southern wall
-                if state & MazeGen.SOUTH is 0:
+                if state & MazeGen.SOUTH == 0:
                     self.render_rect(image, x, y + cell_height, cell_width, wall_height, wall_col)
                 else:
                     self.render_rect(image, x, y + cell_height, cell_width, wall_height, cell_col)
@@ -234,13 +234,13 @@ def main():
         maze = MazeGen(args.width, args.height)
         maze.generate()
         if args.verbose:
-            print maze
+            print(maze)
         maze.render(args.cellw, args.cellh, args.wallw, args.wallh)
 
     except Exception as e:
         if args.verbose:
             traceback.print_exc()
-        print "Failed with error:\n{}".format(e)
+        print(("Failed with error:\n{}".format(e)))
 
 if __name__ == "__main__":
     main()
